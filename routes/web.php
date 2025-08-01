@@ -15,6 +15,7 @@ use App\Http\Controllers\GanttController;
 | Rute Publik
 |--------------------------------------------------------------------------
 */
+
 Route::get('/', [DashboardController::class, 'dashboardPublik'])->name('home');
 Route::get('/kegiatan/{kegiatan}', [DashboardController::class, 'showKegiatanPublik'])->name('kegiatan.publik.show');
 
@@ -38,7 +39,13 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-    Route::get('/gantt-data', [GanttController::class, 'getData'])->name('gantt.data');
+    Route::get('/gantt-data', [GanttController::class, 'data'])->name('gantt.data');
+    // Rute untuk menampilkan halaman Gantt Chart
+    Route::get('/gantt', function () {
+        return view('gantt_chart');
+    });
+    // API untuk mengambil data Gantt spesifik per kegiatan
+    Route::get('/api/kegiatan/{id}/gantt', [GanttController::class, 'kegiatanData'])->name('gantt.kegiatan.data');
 
     // --- Grup Rute Superadmin ---
     Route::middleware('role:superadmin')->prefix('superadmin')->name('superadmin.')->group(function () {

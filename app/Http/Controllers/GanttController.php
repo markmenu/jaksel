@@ -9,35 +9,80 @@ use Carbon\Carbon;
 
 class GanttController extends Controller
 {
-    public function getData()
+    public function data()
     {
-        // 1. Ambil semua kegiatan (tugas)
-        $tasks = Kegiatan::all();
+        $kegiatans = Kegiatan::all();
 
-        // 2. Format data tugas sesuai kebutuhan DHTMLX
-        $formattedTasks = $tasks->map(function ($task) {
+        // Transformasi data agar sesuai format DHTMLX
+        $tasks = $kegiatans->map(function ($kegiatan) {
             return [
-                'id'        => $task->id,
-                'text'      => $task->nama_kegiatan,
-                'start_date'=> Carbon::parse($task->tanggal_mulai)->format('Y-m-d'),
-                'duration'  => Carbon::parse($task->tanggal_mulai)->diffInDays(Carbon::parse($task->tanggal_selesai)),
-                'progress'  => $task->progress / 100, // DHTMLX butuh progress dalam format 0-1
-                'parent'    => $task->parent_id,
+                'id'       => $kegiatan->id,
+                'text'     => $kegiatan->nama_kegiatan,
+                'start_date' => $kegiatan->tanggal_mulai->format('d-m-Y'),
+                'duration' => $kegiatan->tanggal_mulai->diffInDays($kegiatan->tanggal_selesai),
+                'progress' => $kegiatan->progress / 100, // DHTMLX butuh progress dalam format 0 sampai 1
+                'parent'   => $kegiatan->parent_id,
+                // 'open'     => true, // Uncomment ini jika ingin semua cabang terbuka otomatis
             ];
         });
 
-        // 3. Ambil semua data dependensi (links)
-        // Pastikan Anda sudah membuat model TaskLink
-        if (class_exists(TaskLink::class)) {
-            $links = TaskLink::all();
-        } else {
-            $links = [];
-        }
-        
-        // 4. Gabungkan keduanya dalam satu response JSON
+        // Endpoint untuk data dependensi/link
+        $links = TaskLink::all()->map(function ($link) {
+            return [
+                'id'     => $link->id,
+                'source' => $link->source,
+                'target' => $link->target,
+                'type'   => '0' // Tipe 0: Finish to Start
+            ];
+        });
+
         return response()->json([
-            'data'  => $formattedTasks,
-            'links' => $links
+            "data"  => $tasks,
+            "links" => $links
+        ]);
+    }
+
+    public function kegiatanData(Request $request, $id)
+    {
+        // 1. Ambil kegiatan utama (induk)
+        $kegiatanUtama = Kegiatan::findOrFail($id);
+
+        // 2. Ambil semua sub-kegiatan yang memiliki parent_id ini
+        $subKegiatan = Kegiatan::where('parent_id', $id)->get();
+
+        // 3. Gabungkan keduanya
+        $kegiatans = $subKegiatan->push($kegiatanUtama);
+
+        // Transformasi data agar sesuai format DHTMLX
+        $tasks = $kegiatans->map(function ($kegiatan) {
+            return [
+                'id'       => $kegiatan->id,
+                'text'     => $kegiatan->nama_kegiatan,
+                'start_date' => $kegiatan->tanggal_mulai->format('d-m-Y'),
+                'duration' => $kegiatan->tanggal_mulai->diffInDays($kegiatan->tanggal_selesai),
+                'progress' => $kegiatan->progress / 100,
+                'parent'   => $kegiatan->parent_id,
+                'open'     => true, // Buka semua cabang secara otomatis
+            ];
+        });
+
+        // Ambil dependensi yang relevan
+        $kegiatanIds = $kegiatans->pluck('id');
+        $links = TaskLink::whereIn('source_task_id', $kegiatanIds) // <--- UBAH INI
+            ->orWhereIn('target_task_id', $kegiatanIds) // <--- UBAH INI
+            ->get()
+            ->map(function ($link) {
+                return [
+                    'id'     => $link->id,
+                    'source' => $link->source_task_id, // <--- UBAH INI
+                    'target' => $link->target_task_id, // <--- UBAH INI
+                    'type'   => '0'
+                ];
+            });
+
+        return response()->json([
+            "data"  => $tasks,
+            "links" => $links
         ]);
     }
 }
