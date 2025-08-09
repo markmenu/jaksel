@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
 use App\Models\Kegiatan;
 use App\Models\Metadata;
 use Illuminate\Http\Request;
@@ -25,10 +26,22 @@ class DashboardController extends Controller
         $kegiatan->load('metadata');
         return view('kegiatan_publik_show', compact('kegiatan'));
     }
-    
+
     public function dashboardB()
     {
-        return view('superadmin.dashboard');
+        $totalUsers = User::count();
+        $totalKegiatans = Kegiatan::count();
+        $kegiatanSelesai = Kegiatan::where('status', 'Selesai')->count();
+
+        // Ambil data distribusi peran pengguna untuk grafik
+        $roleDistribution = User::select('role', \DB::raw('count(*) as total'))
+                                ->groupBy('role')
+                                ->get();
+        
+        $roleLabels = $roleDistribution->pluck('role')->toArray();
+        $roleSeries = $roleDistribution->pluck('total')->toArray();
+
+        return view('superadmin.dashboard', compact('totalUsers', 'totalKegiatans', 'kegiatanSelesai', 'roleLabels', 'roleSeries'));
     }
 
     public function dashboardC()
@@ -46,7 +59,6 @@ class DashboardController extends Controller
             $data['kegiatanBerjalan'] = $kegiatans->clone()->where('status', 'Berjalan')->count();
             $data['menungguPersetujuan'] = $kegiatans->clone()->where('status', 'Menunggu Persetujuan')->count();
             $data['notifikasiTerbaru'] = $user->unreadNotifications()->take(5)->get();
-
         } elseif ($user->role === 'anggota_tim') {
             // Data untuk Anggota Tim
             $kegiatans = $user->kegiatans()->wherePivot('role_in_kegiatan', 'anggota');
@@ -74,10 +86,10 @@ class DashboardController extends Controller
                     Carbon::parse($kegiatan->tanggal_selesai)->getTimestamp() * 1000
                 ],
                 // Beri warna berbeda jika sudah selesai
-                'fillColor' => $kegiatan->progress == 100 ? '#4CAF50' : '#4f46e5', 
+                'fillColor' => $kegiatan->progress == 100 ? '#4CAF50' : '#4f46e5',
             ];
         });
-        
+
         // Siapkan data progress terpisah untuk label
         $progressData = $semuaKegiatan->pluck('progress', 'nama_kegiatan');
 

@@ -43,7 +43,7 @@ class UserController extends Controller
 
     public function create()
     {
-        return view('superadmin.users_create');
+        return view('superadmin.users_form');
     }
 
     public function store(Request $request)
@@ -72,7 +72,7 @@ class UserController extends Controller
 
     public function edit(User $user)
     {
-        return view('superadmin.users_edit', compact('user'));
+        return view('superadmin.users_form', compact('user'));
     }
 
     public function update(Request $request, User $user)

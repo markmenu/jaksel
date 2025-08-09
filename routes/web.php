@@ -8,7 +8,9 @@ use App\Http\Controllers\AnggotaTimController;
 use App\Http\Controllers\KegiatanController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PersetujuanController;
-use App\Http\Controllers\GanttController;
+use App\Http\Controllers\TaskController;
+use App\Http\Controllers\Auth\AuthenticatedSessionController; // Tambahkan ini jika belum ada
+use App\Http\Controllers\Auth\PasswordController; // Tambahkan ini jika belum ada
 
 /*
 |--------------------------------------------------------------------------
@@ -39,14 +41,6 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-    Route::get('/gantt-data', [GanttController::class, 'data'])->name('gantt.data');
-    // Rute untuk menampilkan halaman Gantt Chart
-    Route::get('/gantt', function () {
-        return view('gantt_chart');
-    });
-    // API untuk mengambil data Gantt spesifik per kegiatan
-    Route::get('/api/kegiatan/{id}/gantt', [GanttController::class, 'kegiatanData'])->name('gantt.kegiatan.data');
-
     // --- Grup Rute Superadmin ---
     Route::middleware('role:superadmin')->prefix('superadmin')->name('superadmin.')->group(function () {
         Route::get('/dashboard', [DashboardController::class, 'dashboardB'])->name('dashboard');
@@ -57,12 +51,14 @@ Route::middleware('auth')->group(function () {
     Route::middleware('role:ketua_tim')->prefix('ketua-tim')->name('ketua-tim.')->group(function () {
         Route::resource('kegiatan', KegiatanController::class);
         Route::post('/kegiatan/{kegiatan}/handle-persetujuan', [PersetujuanController::class, 'handle'])->name('kegiatan.handlePersetujuan');
+        // Rute untuk task mandiri (sebelumnya di luar grup)
+        Route::resource('task', TaskController::class)->except(['index', 'show']);
     });
 
     // --- Grup Rute Anggota Tim ---
     Route::middleware('role:anggota_tim')->prefix('anggota-tim')->name('anggota-tim.')->group(function () {
         Route::get('/kegiatan', [AnggotaTimController::class, 'index'])->name('kegiatan.index');
-        Route::get('/kegiatan/{kegiatan}', [KegiatanController::class, 'show'])->name('kegiatan.show');
+        Route::get('/kegiatan/{kegiatan}', [AnggotaTimController::class, 'show'])->name('kegiatan.show');
         Route::put('/kegiatan/{kegiatan}/update-progress', [AnggotaTimController::class, 'updateProgress'])->name('kegiatan.updateProgress');
     });
 

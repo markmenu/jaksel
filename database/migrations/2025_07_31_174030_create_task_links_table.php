@@ -14,12 +14,11 @@ return new class extends Migration
         // Tabel ini akan menyimpan hubungan dependensi antar tugas
         Schema::create('task_links', function (Blueprint $table) {
             $table->id();
-            $table->string('type'); // Tipe hubungan (misal: finish_to_start)
-            $table->unsignedBigInteger('source_task_id'); // ID tugas sumber
-            $table->unsignedBigInteger('target_task_id'); // ID tugas target
+            $table->string('type', 50)->comment('Tipe hubungan task, contoh: finish_to_start');
+            $table->unsignedBigInteger('source_task_id')->index()->comment('ID tugas sumber');
+            $table->unsignedBigInteger('target_task_id')->index()->comment('ID tugas target');
             $table->timestamps();
 
-            // Menambahkan foreign key constraint (opsional tapi direkomendasikan)
             $table->foreign('source_task_id')->references('id')->on('kegiatans')->onDelete('cascade');
             $table->foreign('target_task_id')->references('id')->on('kegiatans')->onDelete('cascade');
         });

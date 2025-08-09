@@ -11,17 +11,12 @@
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg mb-6">
                 <div class="p-6 text-gray-900 dark:text-gray-100">
 
-                    {{-- Tombol Aksi di Atas --}}
+                    {{-- Tombol Kembali --}}
                     <div class="flex justify-between items-center mb-6 pb-4 border-b">
-                        <a href="{{ url()->previous() }}" class="text-sm text-gray-600 hover:text-gray-900">
-                            &larr; Kembali
+                        <a href="{{ route('anggota-tim.kegiatan.index') }}"
+                            class="text-sm text-gray-600 hover:text-gray-900">
+                            &larr; Kembali ke Daftar Kegiatan
                         </a>
-                        @if (auth()->user()->role === 'ketua_tim')
-                            <a href="{{ route('ketua-tim.kegiatan.edit', $kegiatan) }}"
-                                class="px-4 py-2 bg-indigo-500 text-white font-semibold rounded-lg hover:bg-indigo-600">
-                                Edit Kegiatan Ini
-                            </a>
-                        @endif
                     </div>
 
                     {{-- Detail Kegiatan --}}
@@ -54,12 +49,14 @@
                     </div>
 
                     {{-- Detail Metadata --}}
-                    <h3 class="text-lg font-semibold mb-2 mt-8 border-t pt-4">Informasi Metadata</h3>
-                    <div>
-                        <p class="text-sm text-gray-500">Nama Metadata</p>
-                        <p class="font-semibold">
-                            {{ $kegiatan->metadata?->nama_metadata ?? 'Data tidak ditemukan' }}</p>
-                    </div>
+                    @if ($kegiatan->metadata)
+                        <h3 class="text-lg font-semibold mb-2 mt-8 border-t pt-4">Informasi Metadata</h3>
+                        <div>
+                            <p class="text-sm text-gray-500">Nama Metadata</p>
+                            <p class="font-semibold">
+                                {{ $kegiatan->metadata->nama_metadata }}</p>
+                        </div>
+                    @endif
 
                     {{-- Daftar Tim --}}
                     <h3 class="text-lg font-semibold mb-2 mt-8 border-t pt-4">Tim Kegiatan</h3>
@@ -79,7 +76,7 @@
                     <h3 class="text-lg font-semibold mb-4">Daftar Task</h3>
                     
                     <ul class="list-none space-y-4">
-                        @forelse($tasks as $task)
+                        @forelse($kegiatan->childrenRecursive as $task)
                             @include('anggota-tim.partials.task_item', ['task' => $task, 'level' => 0])
                         @empty
                             <p class="text-gray-500">Tidak ada task terkait.</p>

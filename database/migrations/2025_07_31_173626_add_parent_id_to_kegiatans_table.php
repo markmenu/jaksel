@@ -12,8 +12,12 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('kegiatans', function (Blueprint $table) {
-            // Menambahkan kolom untuk struktur hierarki (induk-anak)
-            $table->unsignedBigInteger('parent_id')->default(0)->after('metadata_id');
+            // Ganti default(0) menjadi nullable()
+            $table->foreignId('parent_id')
+                  ->nullable()
+                  ->after('metadata_id')
+                  ->constrained('kegiatans')
+                  ->onDelete('set null'); // Mengatur ke null jika parent dihapus
         });
     }
 
@@ -23,6 +27,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('kegiatans', function (Blueprint $table) {
+            $table->dropForeign(['parent_id']);
             $table->dropColumn('parent_id');
         });
     }

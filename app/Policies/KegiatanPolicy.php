@@ -21,7 +21,20 @@ class KegiatanPolicy
      */
     public function view(User $user, Kegiatan $kegiatan): bool
     {
-        return $kegiatan->users->contains($user);
+        // Temukan metadata_id dari kegiatan yang ingin dilihat
+        $metadataId = $kegiatan->metadata_id;
+        
+        // Temukan kegiatan utama yang terkait dengan metadata ini
+        $kegiatanUtama = Kegiatan::where('metadata_id', $metadataId)
+                                  ->whereNull('parent_id')
+                                  ->first();
+
+        if ($kegiatanUtama) {
+            // Periksa apakah pengguna adalah anggota dari kegiatan utama tersebut.
+            return $kegiatanUtama->users()->where('user_id', $user->id)->exists();
+        }
+        
+        return false;
     }
 
     /**
@@ -38,9 +51,9 @@ class KegiatanPolicy
     public function update(User $user, Kegiatan $kegiatan): bool
     {
         return $kegiatan->users()
-                        ->where('user_id', $user->id)
-                        ->where('role_in_kegiatan', 'ketua')
-                        ->exists();
+            ->where('user_id', $user->id)
+            ->where('role_in_kegiatan', 'ketua')
+            ->exists();
     }
 
     /**
@@ -49,6 +62,16 @@ class KegiatanPolicy
     public function delete(User $user, Kegiatan $kegiatan): bool
     {
         return $this->update($user, $kegiatan);
+    }
+    
+    /**
+     * Determine whether the user can update progress.
+     */
+    public function updateProgress(User $user, Kegiatan $kegiatan): bool
+    {
+        // Periksa apakah user yang sedang login adalah anggota tim atau ketua tim
+        // dari kegiatan yang bersangkutan.
+        return $kegiatan->users()->where('user_id', $user->id)->exists();
     }
 
     /**
